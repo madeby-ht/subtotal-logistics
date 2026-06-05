@@ -7,7 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0
 :root{--deep:#0a1628;--royal:#1a3a6b;--gold:#c9a84c;--ch:#2d3748;--white:#fff;--bg:#f4f6f9;--border:#e2e8f0;--txt:#2d3748;--lite:#718096;--ok:#27ae60;--warn:#f39c12;--bad:#e74c3c;--info:#3498db}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
 .sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:var(--deep);color:var(--white);display:flex;flex-direction:column;z-index:100}
@@ -208,7 +208,7 @@ function renderDash(){
   '<div class="stat-card gold"><div class="stat-lbl">Total Revenue</div><div class="stat-val">$'+fmt(t.rev)+'</div><div class="stat-sub">$'+fmt(t.paid)+' collected</div></div>'+
   '<div class="stat-card blue"><div class="stat-lbl">Pipeline</div><div class="stat-val">$'+fmt(t.pipe)+'</div><div class="stat-sub">Awaiting payment</div></div>'+
   '<div class="stat-card green"><div class="stat-lbl">Gross Profit</div><div class="stat-val">$'+fmt(t.margin)+'</div><div class="stat-sub">'+(t.rev>0?Math.round(t.margin/t.rev*100):0)+'% margin</div></div></div>'+
-  '<div class="card"><div class="sec-hdr"><h2>Recent Jobs</h2><button class="btn btn-p btn-sm" onclick="showPage('jobs')">View All</button></div>'+
+  '<div class="card"><div class="sec-hdr"><h2>Recent Jobs</h2><button class="btn btn-p btn-sm" onclick="showPage(\'jobs\')">View All</button></div>'+
   (recent.length===0?'<div class="empty"><h3>No jobs yet</h3><p>Add your first shipment</p></div>':
   '<div class="table-wrap"><table><thead><tr><th>Ref</th><th>Route</th><th>Client</th><th>Revenue</th><th>Margin</th><th>Status</th></tr></thead><tbody>'+
   recent.map(j=>{const c=calc(j);return '<tr><td><b>'+(j.ref||'&mdash;')+'</b></td><td>'+(j.route||'&mdash;')+'</td><td>'+(j.client||'&mdash;')+'</td><td>$'+fmt(c.rev)+'</td><td style="color:'+(c.margin>=0?'var(--ok)':'var(--bad)')+'">$'+fmt(c.margin)+'</td><td>'+badge(j.status)+'</td></tr>';}).join('')+
@@ -225,7 +225,7 @@ function renderJobs(){
   '<div class="card"><div class="sec-hdr"><button class="btn btn-p" onclick="openJobModal()">+ Add Job</button></div>'+
   (jobs.length===0?'<div class="empty"><h3>No jobs yet</h3></div>':
   '<div class="table-wrap"><table><thead><tr><th>Ref</th><th>Date</th><th>Route</th><th>Client</th><th>Trucks</th><th>Revenue</th><th>Cost</th><th>Margin</th><th>Status</th><th></th></tr></thead><tbody>'+
-  jobs.map(j=>{const c=calc(j);return '<tr><td><b>'+(j.ref||'&mdash;')+'</b></td><td style="white-space:nowrap">'+(j.date||'&mdash;')+'</td><td style="white-space:nowrap">'+(j.route||'&mdash;')+'</td><td>'+(j.client||'&mdash;')+'</td><td style="text-align:center">'+(j.trucks||1)+'</td><td>$'+fmt(c.rev)+'</td><td>$'+fmt(c.cost)+'</td><td style="color:'+(c.margin>=0?'var(--ok)':'var(--bad)')+'">$'+fmt(c.margin)+'</td><td>'+badge(j.status)+'</td><td><div style="display:flex;gap:4px"><button class="btn btn-g btn-sm" onclick="openJobModal(''+j.id+'')">Edit</button><button class="btn btn-d btn-sm" onclick="deleteRec('jobs',''+j.id+'')">Del</button></div></td></tr>';}).join('')+
+  jobs.map(j=>{const c=calc(j);return '<tr><td><b>'+(j.ref||'&mdash;')+'</b></td><td style="white-space:nowrap">'+(j.date||'&mdash;')+'</td><td style="white-space:nowrap">'+(j.route||'&mdash;')+'</td><td>'+(j.client||'&mdash;')+'</td><td style="text-align:center">'+(j.trucks||1)+'</td><td>$'+fmt(c.rev)+'</td><td>$'+fmt(c.cost)+'</td><td style="color:'+(c.margin>=0?'var(--ok)':'var(--bad)')+'">$'+fmt(c.margin)+'</td><td>'+badge(j.status)+'</td><td><div style="display:flex;gap:4px"><button class="btn btn-g btn-sm" onclick="openJobModal(\''+j.id+'\')">Edit</button><button class="btn btn-d btn-sm" onclick="deleteRec(\'jobs\',\''+j.id+'\')">Del</button></div></td></tr>';}).join('')+
   '</tbody></table></div>')+'</div>';
 }
 function renderClients(){
@@ -233,7 +233,7 @@ function renderClients(){
   '<div class="card"><div class="sec-hdr"><button class="btn btn-p" onclick="openClientModal()">+ Add Client</button></div>'+
   (clients.length===0?'<div class="empty"><h3>No clients yet</h3></div>':
   '<div class="table-wrap"><table><thead><tr><th>Company</th><th>Contact</th><th>Phone</th><th>Email</th><th>Country</th><th>Jobs</th><th></th></tr></thead><tbody>'+
-  clients.map(c=>{const n=jobs.filter(j=>j.client===c.name).length;return '<tr><td><b>'+c.name+'</b></td><td>'+(c.contact||'&mdash;')+'</td><td>'+(c.phone||'&mdash;')+'</td><td>'+(c.email||'&mdash;')+'</td><td>'+(c.country||'&mdash;')+'</td><td style="text-align:center">'+n+'</td><td><div style="display:flex;gap:4px"><button class="btn btn-g btn-sm" onclick="openClientModal(''+c.id+'')">Edit</button><button class="btn btn-d btn-sm" onclick="deleteRec('clients',''+c.id+'')">Del</button></div></td></tr>';}).join('')+
+  clients.map(c=>{const n=jobs.filter(j=>j.client===c.name).length;return '<tr><td><b>'+c.name+'</b></td><td>'+(c.contact||'&mdash;')+'</td><td>'+(c.phone||'&mdash;')+'</td><td>'+(c.email||'&mdash;')+'</td><td>'+(c.country||'&mdash;')+'</td><td style="text-align:center">'+n+'</td><td><div style="display:flex;gap:4px"><button class="btn btn-g btn-sm" onclick="openClientModal(\''+c.id+'\')">Edit</button><button class="btn btn-d btn-sm" onclick="deleteRec(\'clients\',\''+c.id+'\')">Del</button></div></td></tr>';}).join('')+
   '</tbody></table></div>')+'</div>';
 }
 function renderFleet(){
@@ -241,7 +241,7 @@ function renderFleet(){
   '<div class="card"><div class="sec-hdr"><button class="btn btn-p" onclick="openFleetModal()">+ Add Subcontractor</button></div>'+
   (fleet.length===0?'<div class="empty"><h3>No subcontractors yet</h3></div>':
   '<div class="table-wrap"><table><thead><tr><th>Name</th><th>Plate</th><th>Type</th><th>Phone</th><th>Rate/Trip</th><th>Jobs</th><th></th></tr></thead><tbody>'+
-  fleet.map(f=>{const n=jobs.filter(j=>j.subcontractor===f.name).length;return '<tr><td><b>'+f.name+'</b></td><td>'+(f.plate||'&mdash;')+'</td><td>'+(f.type||'&mdash;')+'</td><td>'+(f.phone||'&mdash;')+'</td><td>'+(f.rate?'$'+fmt(f.rate):'&mdash;')+'</td><td style="text-align:center">'+n+'</td><td><div style="display:flex;gap:4px"><button class="btn btn-g btn-sm" onclick="openFleetModal(''+f.id+'')">Edit</button><button class="btn btn-d btn-sm" onclick="deleteRec('fleet',''+f.id+'')">Del</button></div></td></tr>';}).join('')+
+  fleet.map(f=>{const n=jobs.filter(j=>j.subcontractor===f.name).length;return '<tr><td><b>'+f.name+'</b></td><td>'+(f.plate||'&mdash;')+'</td><td>'+(f.type||'&mdash;')+'</td><td>'+(f.phone||'&mdash;')+'</td><td>'+(f.rate?'$'+fmt(f.rate):'&mdash;')+'</td><td style="text-align:center">'+n+'</td><td><div style="display:flex;gap:4px"><button class="btn btn-g btn-sm" onclick="openFleetModal(\''+f.id+'\')">Edit</button><button class="btn btn-d btn-sm" onclick="deleteRec(\'fleet\',\''+f.id+'\')">Del</button></div></td></tr>';}).join('')+
   '</tbody></table></div>')+'</div>';
 }
 function renderFinance(){
