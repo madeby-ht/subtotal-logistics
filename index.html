@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subtotal Logistics — Operations Hub</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--deep:#0a1628;--royal:#1a3a6b;--gold:#c9a84c;--ch:#2d3748;--white:#fff;--bg:#f4f6f9;--border:#e2e8f0;--txt:#2d3748;--lite:#718096;--ok:#27ae60;--warn:#f39c12;--bad:#e74c3c;--info:#3498db}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:var(--deep);color:var(--white);display:flex;flex-direction:column;z-index:100}
+.sb-brand{padding:20px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-brand h2{font-size:15px;font-weight:700;color:var(--gold)}
+.sb-brand p{font-size:11px;color:rgba(255,255,255,.4);margin-top:2px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;cursor:pointer;font-size:13px;color:rgba(255,255,255,.65);transition:all .2s;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.05);color:var(--white)}
+.nav-item.active{background:rgba(201,168,76,.15);color:var(--gold);border-left-color:var(--gold)}
+.main{margin-left:220px;padding:28px;min-height:100vh}
+.pg-header{margin-bottom:24px}
+.pg-header h1{font-size:22px;font-weight:700;color:var(--deep)}
+.pg-header p{color:var(--lite);font-size:13px;margin-top:3px}
+.card{background:var(--white);border-radius:12px;border:1px solid var(--border);padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:16px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat-card{background:var(--white);border-radius:12px;padding:18px;border:1px solid var(--border)}
+.stat-lbl{font-size:11px;color:var(--lite);text-transform:uppercase;letter-spacing:.5px}
+.stat-val{font-size:26px;font-weight:700;color:var(--deep);margin:5px 0 2px}
+.stat-sub{font-size:11px;color:var(--lite)}
+.stat-card.gold .stat-val{color:var(--gold)}
+.stat-card.green .stat-val{color:var(--ok)}
+.stat-card.blue .stat-val{color:var(--royal)}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--bg);padding:9px 13px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--lite);border-bottom:2px solid var(--border)}
+td{padding:11px 13px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbfc}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.b-draft{background:#edf2f7;color:#718096}
+.b-confirmed{background:#ebf8ff;color:#2b6cb0}
+.b-transit{background:#fef9c3;color:#92400e}
+.b-delivered{background:#e6fffa;color:#234e52}
+.b-invoiced{background:#faf5ff;color:#553c9a}
+.b-paid{background:#f0fff4;color:#276749}
+.btn{padding:7px 16px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:all .15s}
+.btn-p{background:var(--royal);color:var(--white)}
+.btn-p:hover{background:var(--deep)}
+.btn-g{background:transparent;color:var(--lite);border:1px solid var(--border)}
+.btn-g:hover{background:var(--bg)}
+.btn-d{background:#fff5f5;color:var(--bad);border:1px solid #fed7d7}
+.btn-d:hover{background:var(--bad);color:white}
+.btn-sm{padding:4px 11px;font-size:11px}
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center}
+.modal-ov.open{display:flex}
+.modal{background:white;border-radius:16px;padding:26px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal h3{font-size:17px;font-weight:700;color:var(--deep);margin-bottom:18px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:11px;font-weight:600;color:var(--lite);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.fg input,.fg select,.fg textarea{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:7px;font-size:13px;color:var(--txt);background:white;outline:none}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--royal);box-shadow:0 0 0 3px rgba(26,58,107,.08)}
+.modal-acts{display:flex;gap:9px;justify-content:flex-end;margin-top:18px}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sec-hdr h2{font-size:15px;font-weight:700;color:var(--deep)}
+.empty{text-align:center;padding:50px 20px;color:var(--lite)}
+.empty h3{font-size:16px;color:var(--txt);margin-bottom:6px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.stats-grid{grid-template-columns:1fr 1fr}.two-col{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="sb-brand">
+    <h2>&#x1F69B; Subtotal Logistics</h2>
+    <p>Operations Management</p>
+  </div>
+  <div style="padding:10px 0">
+    <div class="nav-item active" onclick="showPage('dashboard')">&#x1F4CA; &nbsp;Dashboard</div>
+    <div class="nav-item" onclick="showPage('jobs')">&#x1F4E6; &nbsp;Jobs</div>
+    <div class="nav-item" onclick="showPage('clients')">&#x1F465; &nbsp;Clients</div>
+    <div class="nav-item" onclick="showPage('fleet')">&#x1F69A; &nbsp;Fleet &amp; Vendors</div>
+    <div class="nav-item" onclick="showPage('finance')">&#x1F4B0; &nbsp;Finance</div>
+  </div>
+</div>
+<div class="main" id="app"><div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--lite)">Loading...</div></div>
+
+<div class="modal-ov" id="jmod">
+  <div class="modal">
+    <h3 id="jmod-title">Add Job</h3>
+    <div class="form-row">
+      <div class="fg"><label>Job Ref</label><input id="j-ref" placeholder="SL-2026-001"></div>
+      <div class="fg"><label>Date</label><input id="j-date" type="date"></div>
+    </div>
+    <div class="fg"><label>Route</label>
+      <select id="j-route"><option value="">Select route...</option>
+        <option>Kampala &rarr; Mombasa</option><option>Kampala &rarr; Dar es Salaam</option>
+        <option>Kampala &rarr; Kigali</option><option>Kampala &rarr; Nairobi</option>
+        <option>Entebbe &rarr; DRC (UN)</option><option>Kampala &rarr; Juba</option>
+        <option>Kampala &rarr; Bujumbura</option><option>Kampala &rarr; Lusaka</option>
+        <option>Mombasa &rarr; Kampala</option><option>Dar es Salaam &rarr; Kampala</option>
+        <option>Other</option></select>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label>Client</label><select id="j-client"><option value="">Select...</option></select></div>
+      <div class="fg"><label>Subcontractor</label><select id="j-sub"><option value="">Own truck</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label>No. Trucks</label><input id="j-trucks" type="number" value="1" min="1"></div>
+      <div class="fg"><label>Rate/Truck (USD)</label><input id="j-rate" type="number" placeholder="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label>Cost/Truck (USD)</label><input id="j-cost" type="number" placeholder="0"></div>
+      <div class="fg"><label>Status</label>
+        <select id="j-status"><option>Draft</option><option>Confirmed</option><option>In Transit</option><option>Delivered</option><option>Invoiced</option><option>Paid</option></select>
+      </div>
+    </div>
+    <div class="fg"><label>Notes / Cargo</label><textarea id="j-notes" rows="2" placeholder="Cargo type, instructions..."></textarea></div>
+    <div class="modal-acts">
+      <button class="btn btn-g" onclick="closeModal('jmod')">Cancel</button>
+      <button class="btn btn-p" onclick="saveJob()">Save Job</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="cmod">
+  <div class="modal">
+    <h3 id="cmod-title">Add Client</h3>
+    <div class="fg"><label>Company Name</label><input id="c-name" placeholder="Company name"></div>
+    <div class="form-row">
+      <div class="fg"><label>Contact Person</label><input id="c-contact" placeholder="Name"></div>
+      <div class="fg"><label>Phone</label><input id="c-phone" placeholder="+256..."></div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label>Email</label><input id="c-email" type="email" placeholder="email@co.com"></div>
+      <div class="fg"><label>Country</label><input id="c-country" placeholder="Uganda"></div>
+    </div>
+    <div class="fg"><label>Notes</label><textarea id="c-notes" rows="2" placeholder="Payment terms..."></textarea></div>
+    <div class="modal-acts">
+      <button class="btn btn-g" onclick="closeModal('cmod')">Cancel</button>
+      <button class="btn btn-p" onclick="saveClient()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="fmod">
+  <div class="modal">
+    <h3 id="fmod-title">Add Subcontractor</h3>
+    <div class="fg"><label>Name / Company</label><input id="f-name" placeholder="Driver or company name"></div>
+    <div class="form-row">
+      <div class="fg"><label>Plate</label><input id="f-plate" placeholder="UBE 123X"></div>
+      <div class="fg"><label>Type</label>
+        <select id="f-type"><option>Own Truck</option><option>Subcontractor - 20ft</option><option>Subcontractor - 40ft</option><option>Subcontractor - Flatbed</option><option>Subcontractor - Tanker</option><option>Other</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label>Phone</label><input id="f-phone" placeholder="+256..."></div>
+      <div class="fg"><label>Rate/Trip (USD)</label><input id="f-rate" type="number" placeholder="0"></div>
+    </div>
+    <div class="fg"><label>Notes</label><textarea id="f-notes" rows="2" placeholder="Preferred routes, notes..."></textarea></div>
+    <div class="modal-acts">
+      <button class="btn btn-g" onclick="closeModal('fmod')">Cancel</button>
+      <button class="btn btn-p" onclick="saveFleet()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig={apiKey:"AIzaSyCQET1Ce2gn5u4F4DP400BUNFi1RPQS7bE",authDomain:"subtotal-logistics.firebaseapp.com",projectId:"subtotal-logistics",storageBucket:"subtotal-logistics.firebasestorage.app",messagingSenderId:"841830143618",appId:"1:841830143618:web:f22bbe8466fdfe19ae069b"};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore();
+let page='dashboard',editId=null,jobs=[],clients=[],fleet=[];
+window.onload=async function(){
+  document.getElementById('j-date').value=new Date().toISOString().split('T')[0];
+  await Promise.all([load('jobs'),load('clients'),load('fleet')]);
+  showPage('dashboard');
+};
+async function load(col){
+  try{
+    const q=col==='jobs'?await db.collection(col).orderBy('createdAt','desc').get():await db.collection(col).orderBy('name').get();
+    const arr=q.docs.map(d=>({id:d.id,...d.data()}));
+    if(col==='jobs')jobs=arr;else if(col==='clients')clients=arr;else fleet=arr;
+  }catch(e){if(col==='jobs')jobs=[];else if(col==='clients')clients=[];else fleet=[];}
+}
+function showPage(p){
+  page=p;
+  document.querySelectorAll('.nav-item').forEach((n,i)=>n.classList.toggle('active',['dashboard','jobs','clients','fleet','finance'][i]===p));
+  const r={dashboard:renderDash,jobs:renderJobs,clients:renderClients,fleet:renderFleet,finance:renderFinance};
+  document.getElementById('app').innerHTML=r[p]();
+}
+function calc(j){const t=+j.trucks||1,r=+j.rate||0,c=+j.cost||0,rev=t*r,cost=t*c,margin=rev-cost;return{rev,cost,margin,pct:rev>0?margin/rev*100:0};}
+function totals(){
+  const rev=jobs.reduce((s,j)=>s+calc(j).rev,0),cost=jobs.reduce((s,j)=>s+calc(j).cost,0);
+  const paid=jobs.filter(j=>j.status==='Paid').reduce((s,j)=>s+calc(j).rev,0);
+  const pipe=jobs.filter(j=>j.status!=='Paid').reduce((s,j)=>s+calc(j).rev,0);
+  const active=jobs.filter(j=>['Confirmed','In Transit'].includes(j.status)).length;
+  return{rev,cost,margin:rev-cost,paid,pipe,active,total:jobs.length};
+}
+function fmt(n){return(+n||0).toLocaleString('en-US',{maximumFractionDigits:0});}
+function badge(s){const m={'Draft':'b-draft','Confirmed':'b-confirmed','In Transit':'b-transit','Delivered':'b-delivered','Invoiced':'b-invoiced','Paid':'b-paid'};return '<span class="badge '+(m[s]||'b-draft')+'">'+s+'</span>';}
+function renderDash(){
+  const t=totals(),recent=jobs.slice(0,6);
+  const byStatus=['Draft','Confirmed','In Transit','Delivered','Invoiced','Paid'].map(s=>({s,count:jobs.filter(j=>j.status===s).length,rev:jobs.filter(j=>j.status===s).reduce((a,j)=>a+calc(j).rev,0)}));
+  const rm={};jobs.forEach(j=>{if(!j.route)return;if(!rm[j.route])rm[j.route]={n:0,rev:0};rm[j.route].n++;rm[j.route].rev+=calc(j).rev;});
+  const tr=Object.entries(rm).sort((a,b)=>b[1].rev-a[1].rev).slice(0,5);
+  return '<div class="pg-header"><h1>Operations Dashboard</h1><p>Live overview &mdash; Subtotal Logistics</p></div>'+
+  '<div class="stats-grid"><div class="stat-card"><div class="stat-lbl">Total Jobs</div><div class="stat-val">'+t.total+'</div><div class="stat-sub">'+t.active+' active</div></div>'+
+  '<div class="stat-card gold"><div class="stat-lbl">Total Revenue</div><div class="stat-val">$'+fmt(t.rev)+'</div><div class="stat-sub">$'+fmt(t.paid)+' collected</div></div>'+
+  '<div class="stat-card blue"><div class="stat-lbl">Pipeline</div><div class="stat-val">$'+fmt(t.pipe)+'</div><div class="stat-sub">Awaiting payment</div></div>'+
+  '<div class="stat-card green"><div class="stat-lbl">Gross Profit</div><div class="stat-val">$'+fmt(t.margin)+'</div><div class="stat-sub">'+(t.rev>0?Math.round(t.margin/t.rev*100):0)+'% margin</div></div></div>'+
+  '<div class="card"><div class="sec-hdr"><h2>Recent Jobs</h2><button class="btn btn-p btn-sm" onclick="showPage('jobs')">View All</button></div>'+
+  (recent.length===0?'<div class="empty"><h3>No jobs yet</h3><p>Add your first shipment</p></div>':
+  '<div class="table-wrap"><table><thead><tr><th>Ref</th><th>Route</th><th>Client</th><th>Revenue</th><th>Margin</th><th>Status</th></tr></thead><tbody>'+
+  recent.map(j=>{const c=calc(j);return '<tr><td><b>'+(j.ref||'&mdash;')+'</b></td><td>'+(j.route||'&mdash;')+'</td><td>'+(j.client||'&mdash;')+'</td><td>$'+fmt(c.rev)+'</td><td style="color:'+(c.margin>=0?'var(--ok)':'var(--bad)')+'">$'+fmt(c.margin)+'</td><td>'+badge(j.status)+'</td></tr>';}).join('')+
+  '</tbody></table></div>')+
+  '</div><div class="two-col"><div class="card"><div class="sec-hdr"><h2>Pipeline Status</h2></div>'+
+  byStatus.map(({s,count,rev})=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:8px">'+badge(s)+'<span style="font-size:12px;color:var(--lite)">'+count+' job'+(count!==1?'s':'')+'</span></div><span style="font-size:13px;font-weight:600">$'+fmt(rev)+'</span></div>').join('')+
+  '</div><div class="card"><div class="sec-hdr"><h2>Top Routes</h2></div>'+
+  (tr.length===0?'<div style="color:var(--lite);font-size:13px;padding:16px 0;text-align:center">No data yet</div>':
+  tr.map(([route,d])=>'<div style="padding:7px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;font-size:13px"><span style="font-weight:500">'+route+'</span><span style="color:var(--lite)">'+d.n+' job'+(d.n!==1?'s':'')+'</span></div><div style="font-size:13px;color:var(--gold);font-weight:600">$'+fmt(d.rev)+'</div></div>').join(''))+
+  '</div></div>';
+}
+function renderJobs(){
+  return '<div class="pg-header"><h1>Jobs &amp; Shipments</h1><p>'+jobs.length+' total jobs</p></div>'+
+  '<div class="card"><div class="sec-hdr"><button class="btn btn-p" onclick="openJobModal()">+ Add Job</button></div>'+
+  (jobs.length===0?'<div class="empty"><h3>No jobs yet</h3></div>':
+  '<div class="table-wrap"><table><thead><tr><th>Ref</th><th>Date</th><th>Route</th><th>Client</th><th>Trucks</th><th>Revenue</th><th>Cost</th><th>Margin</th><th>Status</th><th></th></tr></thead><tbody>'+
+  jobs.map(j=>{const c=calc(j);return '<tr><td><b>'+(j.ref||'&mdash;')+'</b></td><td style="white-space:nowrap">'+(j.date||'&mdash;')+'</td><td style="white-space:nowrap">'+(j.route||'&mdash;')+'</td><td>'+(j.client||'&mdash;')+'</td><td style="text-align:center">'+(j.trucks||1)+'</td><td>$'+fmt(c.rev)+'</td><td>$'+fmt(c.cost)+'</td><td style="color:'+(c.margin>=0?'var(--ok)':'var(--bad)')+'">$'+fmt(c.margin)+'</td><td>'+badge(j.status)+'</td><td><div style="display:flex;gap:4px"><button class="btn btn-g btn-sm" onclick="openJobModal(''+j.id+'')">Edit</button><button class="btn btn-d btn-sm" onclick="deleteRec('jobs',''+j.id+'')">Del</button></div></td></tr>';}).join('')+
+  '</tbody></table></div>')+'</div>';
+}
+function renderClients(){
+  return '<div class="pg-header"><h1>Clients</h1><p>'+clients.length+' client'+(clients.length!==1?'s':'')+'</p></div>'+
+  '<div class="card"><div class="sec-hdr"><button class="btn btn-p" onclick="openClientModal()">+ Add Client</button></div>'+
+  (clients.length===0?'<div class="empty"><h3>No clients yet</h3></div>':
+  '<div class="table-wrap"><table><thead><tr><th>Company</th><th>Contact</th><th>Phone</th><th>Email</th><th>Country</th><th>Jobs</th><th></th></tr></thead><tbody>'+
+  clients.map(c=>{const n=jobs.filter(j=>j.client===c.name).length;return '<tr><td><b>'+c.name+'</b></td><td>'+(c.contact||'&mdash;')+'</td><td>'+(c.phone||'&mdash;')+'</td><td>'+(c.email||'&mdash;')+'</td><td>'+(c.country||'&mdash;')+'</td><td style="text-align:center">'+n+'</td><td><div style="display:flex;gap:4px"><button class="btn btn-g btn-sm" onclick="openClientModal(''+c.id+'')">Edit</button><button class="btn btn-d btn-sm" onclick="deleteRec('clients',''+c.id+'')">Del</button></div></td></tr>';}).join('')+
+  '</tbody></table></div>')+'</div>';
+}
+function renderFleet(){
+  return '<div class="pg-header"><h1>Fleet &amp; Vendors</h1><p>'+fleet.length+' subcontractor'+(fleet.length!==1?'s':'')+'</p></div>'+
+  '<div class="card"><div class="sec-hdr"><button class="btn btn-p" onclick="openFleetModal()">+ Add Subcontractor</button></div>'+
+  (fleet.length===0?'<div class="empty"><h3>No subcontractors yet</h3></div>':
+  '<div class="table-wrap"><table><thead><tr><th>Name</th><th>Plate</th><th>Type</th><th>Phone</th><th>Rate/Trip</th><th>Jobs</th><th></th></tr></thead><tbody>'+
+  fleet.map(f=>{const n=jobs.filter(j=>j.subcontractor===f.name).length;return '<tr><td><b>'+f.name+'</b></td><td>'+(f.plate||'&mdash;')+'</td><td>'+(f.type||'&mdash;')+'</td><td>'+(f.phone||'&mdash;')+'</td><td>'+(f.rate?'$'+fmt(f.rate):'&mdash;')+'</td><td style="text-align:center">'+n+'</td><td><div style="display:flex;gap:4px"><button class="btn btn-g btn-sm" onclick="openFleetModal(''+f.id+'')">Edit</button><button class="btn btn-d btn-sm" onclick="deleteRec('fleet',''+f.id+'')">Del</button></div></td></tr>';}).join('')+
+  '</tbody></table></div>')+'</div>';
+}
+function renderFinance(){
+  const t=totals(),rm={};
+  jobs.forEach(j=>{const r=j.route||'Unknown';if(!rm[r])rm[r]={n:0,rev:0,cost:0,margin:0};const c=calc(j);rm[r].n++;rm[r].rev+=c.rev;rm[r].cost+=c.cost;rm[r].margin+=c.margin;});
+  const sm={};['Draft','Confirmed','In Transit','Delivered','Invoiced','Paid'].forEach(s=>{sm[s]=jobs.filter(j=>j.status===s).reduce((a,j)=>a+calc(j).rev,0);});
+  return '<div class="pg-header"><h1>Financial Summary</h1><p>Revenue, costs and margins</p></div>'+
+  '<div class="stats-grid"><div class="stat-card gold"><div class="stat-lbl">Total Revenue</div><div class="stat-val">$'+fmt(t.rev)+'</div></div>'+
+  '<div class="stat-card"><div class="stat-lbl">Total Cost</div><div class="stat-val">$'+fmt(t.cost)+'</div></div>'+
+  '<div class="stat-card green"><div class="stat-lbl">Gross Profit</div><div class="stat-val">$'+fmt(t.margin)+'</div></div>'+
+  '<div class="stat-card blue"><div class="stat-lbl">Margin %</div><div class="stat-val">'+(t.rev>0?Math.round(t.margin/t.rev*100):0)+'%</div></div></div>'+
+  '<div class="two-col"><div class="card"><div class="sec-hdr"><h2>By Route</h2></div>'+
+  (Object.keys(rm).length===0?'<div style="color:var(--lite);font-size:13px;padding:16px 0">No data</div>':
+  '<div class="table-wrap"><table><thead><tr><th>Route</th><th>Jobs</th><th>Revenue</th><th>Cost</th><th>Margin</th></tr></thead><tbody>'+
+  Object.entries(rm).sort((a,b)=>b[1].rev-a[1].rev).map(([r,d])=>'<tr><td style="font-size:12px">'+r+'</td><td style="text-align:center">'+d.n+'</td><td>$'+fmt(d.rev)+'</td><td>$'+fmt(d.cost)+'</td><td style="color:'+(d.margin>=0?'var(--ok)':'var(--bad)')+'">$'+fmt(d.margin)+'</td></tr>').join('')+
+  '</tbody></table></div>')+
+  '</div><div class="card"><div class="sec-hdr"><h2>By Status</h2></div>'+
+  '<div class="table-wrap"><table><thead><tr><th>Status</th><th>Revenue</th><th>%</th></tr></thead><tbody>'+
+  Object.entries(sm).map(([s,r])=>'<tr><td>'+badge(s)+'</td><td>$'+fmt(r)+'</td><td style="color:var(--lite)">'+(t.rev>0?Math.round(r/t.rev*100):0)+'%</td></tr>').join('')+
+  '</tbody></table></div></div></div>';
+}
+function openJobModal(id){
+  editId=id||null;
+  document.getElementById('jmod-title').textContent=id?'Edit Job':'Add New Job';
+  document.getElementById('j-client').innerHTML='<option value="">Select...</option>'+clients.map(c=>'<option>'+c.name+'</option>').join('');
+  document.getElementById('j-sub').innerHTML='<option value="">Own truck</option>'+fleet.map(f=>'<option>'+f.name+'</option>').join('');
+  if(id){const j=jobs.find(x=>x.id===id);document.getElementById('j-ref').value=j.ref||'';document.getElementById('j-date').value=j.date||'';document.getElementById('j-route').value=j.route||'';document.getElementById('j-client').value=j.client||'';document.getElementById('j-sub').value=j.subcontractor||'';document.getElementById('j-trucks').value=j.trucks||1;document.getElementById('j-rate').value=j.rate||'';document.getElementById('j-cost').value=j.cost||'';document.getElementById('j-status').value=j.status||'Draft';document.getElementById('j-notes').value=j.notes||'';}
+  else{document.getElementById('j-ref').value='SL-'+new Date().getFullYear()+'-'+String(jobs.length+1).padStart(3,'0');document.getElementById('j-date').value=new Date().toISOString().split('T')[0];['route','notes'].forEach(f=>document.getElementById('j-'+f).value='');document.getElementById('j-client').value='';document.getElementById('j-sub').value='';document.getElementById('j-trucks').value=1;document.getElementById('j-rate').value='';document.getElementById('j-cost').value='';document.getElementById('j-status').value='Draft';}
+  document.getElementById('jmod').classList.add('open');
+}
+async function saveJob(){
+  const data={ref:document.getElementById('j-ref').value,date:document.getElementById('j-date').value,route:document.getElementById('j-route').value,client:document.getElementById('j-client').value,subcontractor:document.getElementById('j-sub').value,trucks:+document.getElementById('j-trucks').value||1,rate:+document.getElementById('j-rate').value||0,cost:+document.getElementById('j-cost').value||0,status:document.getElementById('j-status').value,notes:document.getElementById('j-notes').value,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+  try{if(editId){await db.collection('jobs').doc(editId).update(data);const i=jobs.findIndex(j=>j.id===editId);jobs[i]={id:editId,...jobs[i],...data};}else{data.createdAt=firebase.firestore.FieldValue.serverTimestamp();const r=await db.collection('jobs').add(data);jobs.unshift({id:r.id,...data});}closeModal('jmod');showPage(page);}catch(e){alert('Error: '+e.message);}
+}
+function openClientModal(id){
+  editId=id||null;document.getElementById('cmod-title').textContent=id?'Edit Client':'Add Client';
+  const fields=['name','contact','phone','email','country','notes'];
+  if(id){const c=clients.find(x=>x.id===id);fields.forEach(f=>document.getElementById('c-'+f).value=c[f]||'');}
+  else{fields.forEach(f=>document.getElementById('c-'+f).value='');}
+  document.getElementById('cmod').classList.add('open');
+}
+async function saveClient(){
+  const data={name:document.getElementById('c-name').value,contact:document.getElementById('c-contact').value,phone:document.getElementById('c-phone').value,email:document.getElementById('c-email').value,country:document.getElementById('c-country').value,notes:document.getElementById('c-notes').value};
+  if(!data.name){alert('Name required');return;}
+  try{if(editId){await db.collection('clients').doc(editId).update(data);const i=clients.findIndex(c=>c.id===editId);clients[i]={id:editId,...data};}else{const r=await db.collection('clients').add(data);clients.push({id:r.id,...data});clients.sort((a,b)=>a.name.localeCompare(b.name));}closeModal('cmod');showPage(page);}catch(e){alert('Error: '+e.message);}
+}
+function openFleetModal(id){
+  editId=id||null;document.getElementById('fmod-title').textContent=id?'Edit Subcontractor':'Add Subcontractor';
+  const fields=['name','plate','phone','rate','notes'];
+  if(id){const f=fleet.find(x=>x.id===id);fields.forEach(ff=>document.getElementById('f-'+ff).value=f[ff]||'');document.getElementById('f-type').value=f.type||'Own Truck';}
+  else{fields.forEach(f=>document.getElementById('f-'+f).value='');document.getElementById('f-type').value='Own Truck';}
+  document.getElementById('fmod').classList.add('open');
+}
+async function saveFleet(){
+  const data={name:document.getElementById('f-name').value,plate:document.getElementById('f-plate').value,type:document.getElementById('f-type').value,phone:document.getElementById('f-phone').value,rate:+document.getElementById('f-rate').value||0,notes:document.getElementById('f-notes').value};
+  if(!data.name){alert('Name required');return;}
+  try{if(editId){await db.collection('fleet').doc(editId).update(data);const i=fleet.findIndex(f=>f.id===editId);fleet[i]={id:editId,...data};}else{const r=await db.collection('fleet').add(data);fleet.push({id:r.id,...data});fleet.sort((a,b)=>a.name.localeCompare(b.name));}closeModal('fmod');showPage(page);}catch(e){alert('Error: '+e.message);}
+}
+async function deleteRec(col,id){
+  if(!confirm('Delete this record?'))return;
+  await db.collection(col).doc(id).delete();
+  if(col==='jobs')jobs=jobs.filter(j=>j.id!==id);
+  else if(col==='clients')clients=clients.filter(c=>c.id!==id);
+  else fleet=fleet.filter(f=>f.id!==id);
+  showPage(page);
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');editId=null;}
+document.querySelectorAll('.modal-ov').forEach(ov=>ov.addEventListener('click',e=>{if(e.target===ov)closeModal(ov.id);}));
+</script>
+</body>
+</html>
