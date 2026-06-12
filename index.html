@@ -858,7 +858,7 @@ renderDash();
 
 
 window.currentUser=null;
-function doLogin(){
+window.doLogin = function(){
   const u=(document.getElementById('lg-user').value||'').trim().toLowerCase();
   const p=document.getElementById('lg-pass').value;
   const err=document.getElementById('lg-err');
@@ -897,7 +897,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const saved=sessionStorage.getItem('sd_user');
   if(saved){try{window.currentUser=JSON.parse(saved);_completeLogin();}catch(e){}}
 });
-async function renderBrokers(){
+window.renderBrokers = async function(){
   var tbody=document.getElementById('broker-list');if(!tbody)return;
   tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-secondary);">Loading...</td></tr>';
   try{
@@ -923,9 +923,9 @@ async function renderBrokers(){
   }catch(e){tbody.innerHTML='<tr><td colspan="4" style="color:var(--danger);padding:20px;">Error loading brokers.</td></tr>';}
 }
 
-function openBrokerModal(){document.getElementById('broker-modal').style.display='flex';setTimeout(()=>document.getElementById('bk-name').focus(),50);}
-function closeBrokerModal(){document.getElementById('broker-modal').style.display='none';['bk-name','bk-user','bk-pass'].forEach(id=>document.getElementById(id).value='');}
-async function saveBroker(){
+window.openBrokerModal = function(){document.getElementById('broker-modal').style.display='flex';setTimeout(()=>document.getElementById('bk-name').focus(),50);}
+window.closeBrokerModal = function(){document.getElementById('broker-modal').style.display='none';['bk-name','bk-user','bk-pass'].forEach(id=>document.getElementById(id).value='');}
+window.saveBroker = async function(){
   const name=document.getElementById('bk-name').value.trim();
   const username=document.getElementById('bk-user').value.trim().toLowerCase();
   const password=document.getElementById('bk-pass').value.trim();
@@ -935,7 +935,7 @@ async function saveBroker(){
   await addDoc(collection(db,'broker_users'),{name,username,password,role:'broker',createdAt:new Date().toISOString()});
   closeBrokerModal();renderBrokers();
 }
-async function deleteBroker(docId,name){
+window.deleteBroker = async function(docId,name){
   if(!confirm('Remove '+name+'? They will lose access immediately.'))return;
   await deleteDoc(doc(db,'broker_users',docId));renderBrokers();
 }
