@@ -898,14 +898,31 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(saved){try{window.currentUser=JSON.parse(saved);_completeLogin();}catch(e){}}
 });
 async function renderBrokers(){
-  const tbody=document.getElementById('broker-list');if(!tbody)return;
-  tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-secondary);">Loading…</td></tr>';
+  var tbody=document.getElementById('broker-list');if(!tbody)return;
+  tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-secondary);">Loading...</td></tr>';
   try{
-    const snap=await getDocs(collection(db,'broker_users'));
+    var snap=await getDocs(collection(db,'broker_users'));
     if(snap.empty){tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--text-secondary);">No brokers added yet.</td></tr>';return;}
-    tbody.innerHTML=snap.docs.map(d=>{const b=d.data();const dt=b.createdAt?new Date(b.createdAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';return '<tr><td><strong>'+b.name+'</strong></td><td><span class="broker-tag">'+b.username+'</span></td><td style="color:var(--text-secondary);font-size:13px;">'+dt+'</td><td><button class="btn btn-ghost" style="padding:4px 12px;font-size:12px;color:var(--danger);border-color:rgba(224,82,82,.5);" onclick="deleteBroker(''+d.id+'',''+b.name+'')">Remove</button></td></tr>';}).join('');
+    tbody.innerHTML='';
+    snap.docs.forEach(function(d){
+      var b=d.data();
+      var dt=b.createdAt?new Date(b.createdAt).toLocaleDateString('en-GB'):'--';
+      var tr=document.createElement('tr');
+      var td0=document.createElement('td');td0.innerHTML='<strong>'+b.name+'</strong>';
+      var td1=document.createElement('td');td1.innerHTML='<span class="broker-tag">'+b.username+'</span>';
+      var td2=document.createElement('td');td2.style.cssText='color:var(--text-secondary);font-size:13px;';td2.textContent=dt;
+      var td3=document.createElement('td');
+      var btn=document.createElement('button');
+      btn.className='btn btn-ghost';btn.textContent='Remove';
+      btn.style.cssText='padding:4px 12px;font-size:12px;color:var(--danger);border-color:rgba(224,82,82,.5);';
+      (function(id,name){btn.onclick=function(){deleteBroker(id,name);};})(d.id,b.name);
+      td3.appendChild(btn);
+      tr.appendChild(td0);tr.appendChild(td1);tr.appendChild(td2);tr.appendChild(td3);
+      tbody.appendChild(tr);
+    });
   }catch(e){tbody.innerHTML='<tr><td colspan="4" style="color:var(--danger);padding:20px;">Error loading brokers.</td></tr>';}
 }
+
 function openBrokerModal(){document.getElementById('broker-modal').style.display='flex';setTimeout(()=>document.getElementById('bk-name').focus(),50);}
 function closeBrokerModal(){document.getElementById('broker-modal').style.display='none';['bk-name','bk-user','bk-pass'].forEach(id=>document.getElementById(id).value='');}
 async function saveBroker(){
